@@ -19,18 +19,14 @@ OFF = 0
 vals = [ON, OFF]
 
 class Cell:
-    def __init__(self, i, j, pos):
+    def __init__(self, i, j):
         self.i = i
         self.j = j
-        self.pos = pos
     def __str__(self):
         print("i: %d, j: %d" % (self.i, self.j))
     def ij(self):
         return [self.i, self.j]
-    def kill_cell(self, grid, cells_alive):
-        grid[self.i, self.j] = OFF
-        cells_alive.remove(self)
-
+        
     @staticmethod
     def graph(i, j, grid):
         grid[i, j] = ON
@@ -38,10 +34,15 @@ class Cell:
     @staticmethod
     def neighbour_sum(i, j, grid, N, M):
         total = int((grid[i, (j-1)%M] + grid[i, (j+1)%M] +
-                     grid[(i-1)%N, j] + grid[(i+1)%N, j] +
-                     grid[(i-1)%N, (j-1)%M] + grid[(i-1)%N, (j+1)%M] +
-                     grid[(i+1)%N, (j-1)%M] + grid[(i+1)%N, (j+1)%M]))
-        return total // ON
+                         grid[(i-1)%N, j] + grid[(i+1)%N, j] +
+                         grid[(i-1)%N, (j-1)%M] + grid[(i-1)%N, (j+1)%M] +
+                         grid[(i+1)%N, (j-1)%M] + grid[(i+1)%N, (j+1)%M])/ON)
+        return total
+
+    @staticmethod
+    def find(cell, i, j):
+        if(cell.i == i and cell.j == j):
+            return True
 
 class Conway:
     def __init__(self, file_name, args):
@@ -49,6 +50,11 @@ class Conway:
         self.args = args
         self.cells_allive = list()
         self.actual_gen = 0
+        self.out = 'output.txt'
+
+    def born(self, cell):
+        self.cells_allive.append(cell)
+        self.cells_allive.sort(key=lambda x : x.i)
 
     # read config file
     def config(self):
@@ -69,8 +75,8 @@ class Conway:
             self.gens = int(f.readline())
             for line in f:
                 s = line.split()
-                cell = Cell(int(s[0]),int(s[1]), len(self.cells_allive) - 1)
-                self.cells_allive.append(cell)
+                cell = Cell(int(s[0]),int(s[1]))
+                self.born(cell)
 
             # Generate empty grid of N * M
             #self.grid = randomGrid(self.N, self.M)
@@ -84,21 +90,35 @@ class Conway:
     def rules(self):
         if (self.actual_gen < self.gens):
             self.actual_gen += 1
-            for cell in self.cells_allive:
-                i, j = cell.ij()
-                ns = cell.neighbour_sum(i, j, self.grid, self.N, self.M)
-                if (ns < 2):                # Rule 1    
-                    cell.kill_cell(self.grid, self.cells_allive)
-                elif (ns > 3):              # Rule 3
-                    cell.kill_cell(self.grid, self.cells_allive)
-            for i in range(0, self.N):
-                for j in range(0, self.M):
-                    if (self.grid[i, j] == OFF):
-                        ns = cell.neighbour_sum(i, j, self.grid, self.N, self.M)
-                        if(ns == 3):
-                            cell = Cell(i, j, len(self.cells_allive) - 1)
-                            self.cells_allive.append(cell)
-                            Cell.graph(i, j, self.grid)
+            new_grid = self.grid.copy()
+            if len(self.cells_allive) > 0:        
+                for i in range(0, self.N):
+                    for j in range(0, self.M):
+                        ns = Cell.neighbour_sum(i, j, self.grid, self.N, self.M)
+                        # Dead cells
+                        if (self.grid[i, j] == OFF):
+                            if (ns == 3):
+                                cell = Cell(i, j)
+                                self.born(cell)
+                                new_grid[i, j] = ON
+                        # Alive cells
+                        else:
+                            if( ns < 2 or ns > 3):
+                                cc = False
+                                for cell in self.cells_allive:
+                                    cc = Cell.find(cell, i, j)
+                                    if(cc):
+                                        self.cells_allive.remove(cell)
+                                    break
+                                new_grid[i, j] = OFF
+
+                self.grid[:] = new_grid[:]
+
+    def report(self):
+        now = datetime.today().strftime('%Y-%m-%d')
+        file = open(self.out, "w")
+        file.write(f'Simulation at {now}\n')
+        file.write(f'Universe size {self.N} x {self.M}\n')
 
 def randomGrid(N, M):
     """returns a grid of NxM random values"""
@@ -136,6 +156,7 @@ def main():
     
     cw = Conway('config.txt', args_buff)
     cw.config()
+    cw.report()
 
     # set animation update interval
     updateInterval = 50
@@ -186,3 +207,8 @@ def main():
 # call main
 if __name__ == '__main__':
     main()
+"""
+cell = Cell(i, j, len(self.cells_allive) - 1)
+self.cells_allive.append(cell)
+Cell.graph(i, j, self.grid)
+"""
