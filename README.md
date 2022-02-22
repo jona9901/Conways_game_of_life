@@ -1,11 +1,11 @@
-#The Game Of Life
+# The Game Of Life
 1The game of life is a cellular automaton devised by the British mathematician John Horton Conway in 1970.
 
 The game is a zero-player game. It's evolution is determined by its initial state, requiring no furder input.
 
 One interacts with the game of life by creating a initial configuration and observing how it evolves.
 
-##RULES
+## RULES
 
 The universe of GoL is an infinite, two-dimensional orthogonbal grid of square cells, each of which is in one of two possible states, alive or dead.
 Every cell interacts with its eight neighbours (cells that are horizontally, vertically or diagonally adjacent), at each step in time.
@@ -22,7 +22,7 @@ These rules can be considered into the following:
     # All other lvie cells die in the next generation. Similarly, all other dead cells stay dead.
 
 
-##CONFIGURATIONS
+## CONFIGURATIONS
 
 Common patter types:
 
@@ -31,7 +31,7 @@ Common patter types:
     # Spaceships    -   Translate themselves across the grid.
 
 
-##How to use:
+## How to use:
 
 python3 conawys.py N M
 
