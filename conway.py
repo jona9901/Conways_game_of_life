@@ -18,8 +18,9 @@ ON = 255
 OFF = 0
 vals = [ON, OFF]
 
-now = datetime.today().strftime('%Y-%m-%d')
 file = None
+
+now = datetime.today().strftime('%Y-%m-%d')
 
 class Cell:        
     @staticmethod
@@ -56,7 +57,7 @@ class Conway:
         self.boat_count = 0
         self.tub_count = 0
 
-        file = open(self.out, "w")
+        
 
     # read config file
     def config(self):
@@ -72,6 +73,10 @@ class Conway:
                 # Read widht and height
                 self.N = int(s[0])
                 self.M = int(s[1])
+
+            
+            file.write(f"Simulation at {now}\n")
+            file.write(f"Universe size {self.N} x {self.M}\n")
 
             # Generate empty grid of N * M
             #self.grid = randomGrid(self.N, self.M)
@@ -104,86 +109,114 @@ class Conway:
                     else:
                         if (ns < 2 or ns > 3):
                             new_grid[i, j] = OFF
-            #self.report()
+            self.report()
+
+            self.write_to_file()
+            
             self.grid[:] = new_grid[:]
             
+    def write_to_file(self):
+        file.write(f'Iteration: {self.actual_gen}\n')
+        file.write('------------------------------------\n')
+        if(self.total_count!=0):
+            file.write(tabulate([['Block', self.block_count, self.block_count*100/self.total_count], ['Beehive', self.beehive_count, self.beehive_count*100/self.total_count], ['Loaf', self.loaf_count, self.loaf_count*100/self.total_count], ['Boat', self.boat_count, self.boat_count*100/self.total_count], ['Tub', self.tub_count, self.tub_count*100/self.total_count], ['Blinker', self.blink_count, self.blink_count*100/self.total_count], ['Toad', self.toad_count, self.toad_count*100/self.total_count], ['Beacon', self.beacon_count, self.beacon_count*100/self.total_count], ['Glider', self.glider_count, self.glider_count*100/self.total_count], ['LG sp ship', self.spaceship_count, self.spaceship_count*100/self.total_count]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
+        else:
+            file.write(tabulate([['Block', self.block_count, 0], ['Beehive', self.beehive_count, 0], ['Loaf', self.loaf_count, 0], ['Boat', self.boat_count, 0], ['Tub', self.tub_count, 0], ['Blinker', self.blink_count, 0], ['Toad', self.toad_count, 0], ['Beacon', self.beacon_count, 0], ['Glider', self.glider_count, 0], ['LG sp ship', self.spaceship_count, 0]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
+        file.write('\n')
+        file.write('------------------------------------\n')
 
-"""
     def report(self):
         for i in range(0, self.N):
             for j in range(0, self.M):
                 # Still lifes
                 #block
-                if(np.array_equal(self.grid[i:i+4, j:j+4] , block1, equal_nan=True) ):
+                if(np.array_equal(self.grid[i:i+4, j:j+4] , block, equal_nan=True) ):
                     self.block_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 # beehive
-                if(np.array_equal(self.grid[i:i+5, j:j+6] , beehive1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+5] , np.rot90(beehive1), equal_nan=True)):
+                if(np.array_equal(self.grid[i:i+5, j:j+6] , beehive, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+5] , np.rot90(beehive), equal_nan=True)):
                     self.beehive_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 # loaf
-                if(np.array_equal(self.grid[i:i+6, j:j+6] , loaf1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1, 3), equal_nan=True)):
-                    self.loag_count+=1
-                    total+=1
+                if(np.array_equal(self.grid[i:i+6, j:j+6] , loaf, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf, 2), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf, 3), equal_nan=True)):
+                    self.loaf_count+=1
+                    self.total_count+=1
+                    continue
                 # boat
-                if(np.array_equal(self.grid[i:i+5, j:j+5] , boat1, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1, 3), equal_nan=True)):
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , boat, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat, 3), equal_nan=True)):
                     self.boat_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 # tub
-                if(np.array_equal(self.grid[i:i+5, j:j+5] , tub1, equal_nan=True) ):
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , tub, equal_nan=True) ):
                     self.tub_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
 
                 # Spaceships
                 # Glider
                 if(np.array_equal(self.grid[i:i+5, j:j+5] , glider1, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1, 3), equal_nan=True)):
                     self.glider_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 if(np.array_equal(self.grid[i:i+5, j:j+5] , glider2, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2, 3), equal_nan=True)):
                     self.glider_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 if(np.array_equal(self.grid[i:i+5, j:j+5] , glider3, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3, 3), equal_nan=True)):
                     self.glider_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 if(np.array_equal(self.grid[i:i+5, j:j+5] , glider4, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4, 3), equal_nan=True)):
                     self.glider_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
 
                 # Light weight spaceship
-                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS1, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS1), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS1, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS1, 3), equal_nan=True)):
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , lws1, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(lws1), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(lws1, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(lws1, 3), equal_nan=True)):
                     self.spaceship_count +=1
-                    total+=1
-                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS2, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS2), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS2, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS2, 3), equal_nan=True)):
+                    self.total_count+=1
+                    continue
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , lws2, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(lws2), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(lws2, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(lws2, 3), equal_nan=True)):
                     self.spaceship_count +=1
-                    total+=1
-                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS3, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS3), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS3, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS3, 3), equal_nan=True)):
+                    self.total_count+=1
+                    continue
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , lws3, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(lws3), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(lws3, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(lws3, 3), equal_nan=True)):
                     self.spaceship_count +=1
-                    total+=1
-                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS4, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS4), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS4, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS4, 3), equal_nan=True)):
+                    self.total_count+=1
+                    continue
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , lws4, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(lws4), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(lws4, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(lws4, 3), equal_nan=True)):
                     self.spaceship_count +=1
-                    total+=1
+                    self.total_count+=1
+                    continue
 
                 #Oscilators
                 # blinker
                 if(np.array_equal(self.grid[i:i+5, j:j+3] , blinker1, equal_nan=True) or np.array_equal(self.grid[i:i+3, j:j+5] , blinker2, equal_nan=True)):
                     self.blink_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 #toad
                 if(np.array_equal(self.grid[i:i+6, j:j+6] , toad1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(toad1), equal_nan=True)):
                     self.toad_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 if(np.array_equal(self.grid[i:i+4, j:j+6] , toad2, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+4] , np.rot90(toad2), equal_nan=True)):
                     self.toad_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 # beacon
                 if(np.array_equal(self.grid[i:i+6, j:j+6] , beacon1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(beacon1), equal_nan=True)):
                     self.beacon_count+=1
-                    total+=1
+                    self.total_count+=1
+                    continue
                 if(np.array_equal(self.grid[i:i+6, j:j+6] , beacon2, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(beacon2), equal_nan=True)):
                     self.beacon_count+=1
-                    total+=1
-                
-"""
+                    self.total_count+=1
+                    continue
+	
 
 
 
@@ -213,13 +246,14 @@ def update(frameNum, img, cw):
 
 # main() function
 def main():
+    global file
     args_buff = None
     if(len(sys.argv) > 1):
         args_buff = sys.argv[1:]
 
     cw = Conway('config.txt', args_buff)
+    file = open(cw.out, "w")
     cw.config()
-    #cw.report()
 
     # set animation update interval
     updateInterval = 50
