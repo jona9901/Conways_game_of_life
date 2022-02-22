@@ -18,19 +18,10 @@ ON = 255
 OFF = 0
 vals = [ON, OFF]
 
-class Cell:
-    def __init__(self, i, j):
-        self.i = i
-        self.j = j
-    def __str__(self):
-        print("i: %d, j: %d" % (self.i, self.j))
-    def ij(self):
-        return [self.i, self.j]
-        
-    @staticmethod
-    def graph(i, j, grid):
-        grid[i, j] = ON
-        
+now = datetime.today().strftime('%Y-%m-%d')
+file = None
+
+class Cell:        
     @staticmethod
     def neighbour_sum(i, j, grid, N, M):
         total = int((grid[i, (j-1)%M] + grid[i, (j+1)%M] +
@@ -43,6 +34,7 @@ class Cell:
     def find(cell, i, j):
         if(cell.i == i and cell.j == j):
             return True
+        return False
 
 class Conway:
     def __init__(self, file_name, args):
@@ -52,9 +44,19 @@ class Conway:
         self.actual_gen = 0
         self.out = 'output.txt'
 
-    def born(self, cell):
-        self.cells_allive.append(cell)
-        self.cells_allive.sort(key=lambda x : x.i)
+        self.total_count = 0
+        self.glider_count = 0
+        self.spaceship_count = 0
+        self.blink_count = 0
+        self.toad_count = 0
+        self.beacon_count = 0
+        self.block_count = 0
+        self.beehive_count = 0
+        self.loaf_count = 0
+        self.boat_count = 0
+        self.tub_count = 0
+
+        file = open(self.out, "w")
 
     # read config file
     def config(self):
@@ -71,54 +73,119 @@ class Conway:
                 self.N = int(s[0])
                 self.M = int(s[1])
 
+            # Generate empty grid of N * M
+            #self.grid = randomGrid(self.N, self.M)
+            self.grid = np.zeros(self.N * self.M, dtype=np.int32).reshape(self.M, self.N)
+
             # Get generations
             self.gens = int(f.readline())
             for line in f:
                 s = line.split()
-                cell = Cell(int(s[0]),int(s[1]))
-                self.born(cell)
-
-            # Generate empty grid of N * M
-            #self.grid = randomGrid(self.N, self.M)
-            self.grid = np.zeros(self.N * self.M).reshape(self.M, self.N)
+                i, j = int(s[0]), int(s[1])
+                self.grid[i, j] = ON
             
-            # Graph cells allive
-            for cell in self.cells_allive:
-                i, j = cell.ij()
-                Cell.graph(i, j, self.grid)
+            # Open file
+            #file.write(f'Simulation at {now}\n')
+            #file.write(f'Universe size {self.N} x {self.M}\n')
+
+
 
     def rules(self):
         if (self.actual_gen < self.gens):
             self.actual_gen += 1
             new_grid = self.grid.copy()
-            if len(self.cells_allive) > 0:        
-                for i in range(0, self.N):
-                    for j in range(0, self.M):
-                        ns = Cell.neighbour_sum(i, j, self.grid, self.N, self.M)
-                        # Dead cells
-                        if (self.grid[i, j] == OFF):
-                            if (ns == 3):
-                                cell = Cell(i, j)
-                                self.born(cell)
-                                new_grid[i, j] = ON
-                        # Alive cells
-                        else:
-                            if( ns < 2 or ns > 3):
-                                cc = False
-                                for cell in self.cells_allive:
-                                    cc = Cell.find(cell, i, j)
-                                    if(cc):
-                                        self.cells_allive.remove(cell)
-                                    break
-                                new_grid[i, j] = OFF
+            
+            for i in range(0, self.N):
+                for j in range(0, self.M):
+                    ns = Cell.neighbour_sum(i, j, self.grid, self.N, self.M)
+                    if (self.grid[i, j] == OFF):
+                        if (ns == 3):
+                            new_grid[i, j] = ON
+                    else:
+                        if (ns < 2 or ns > 3):
+                            new_grid[i, j] = OFF
+            #self.report()
+            self.grid[:] = new_grid[:]
+            
 
-                self.grid[:] = new_grid[:]
-
+"""
     def report(self):
-        now = datetime.today().strftime('%Y-%m-%d')
-        file = open(self.out, "w")
-        file.write(f'Simulation at {now}\n')
-        file.write(f'Universe size {self.N} x {self.M}\n')
+        for i in range(0, self.N):
+            for j in range(0, self.M):
+                # Still lifes
+                #block
+                if(np.array_equal(self.grid[i:i+4, j:j+4] , block1, equal_nan=True) ):
+                    self.block_count+=1
+                    total+=1
+                # beehive
+                if(np.array_equal(self.grid[i:i+5, j:j+6] , beehive1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+5] , np.rot90(beehive1), equal_nan=True)):
+                    self.beehive_count+=1
+                    total+=1
+                # loaf
+                if(np.array_equal(self.grid[i:i+6, j:j+6] , loaf1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(loaf1, 3), equal_nan=True)):
+                    self.loag_count+=1
+                    total+=1
+                # boat
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , boat1, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(boat1, 3), equal_nan=True)):
+                    self.boat_count+=1
+                    total+=1
+                # tub
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , tub1, equal_nan=True) ):
+                    self.tub_count+=1
+                    total+=1
+
+                # Spaceships
+                # Glider
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , glider1, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider1, 3), equal_nan=True)):
+                    self.glider_count+=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , glider2, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider2, 3), equal_nan=True)):
+                    self.glider_count+=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , glider3, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider3, 3), equal_nan=True)):
+                    self.glider_count+=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+5, j:j+5] , glider4, equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4, 2), equal_nan=True) or np.array_equal(self.grid[i:i+5, j:j+5] , np.rot90(glider4, 3), equal_nan=True)):
+                    self.glider_count+=1
+                    total+=1
+
+                # Light weight spaceship
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS1, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS1), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS1, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS1, 3), equal_nan=True)):
+                    self.spaceship_count +=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS2, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS2), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS2, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS2, 3), equal_nan=True)):
+                    self.spaceship_count +=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS3, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS3), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS3, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS3, 3), equal_nan=True)):
+                    self.spaceship_count +=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+6, j:j+7] , LWS4, equal_nan=True) or np.array_equal(self.grid[i:i+7, j:j+6] , np.rot90(LWS4), equal_nan=True) or np.array_equal( self.grid[i:i+6, j:j+7] , np.rot90(LWS4, 2), equal_nan=True) or np.array_equal( self.grid[i:i+7, j:j+6] , np.rot90(LWS4, 3), equal_nan=True)):
+                    self.spaceship_count +=1
+                    total+=1
+
+                #Oscilators
+                # blinker
+                if(np.array_equal(self.grid[i:i+5, j:j+3] , blinker1, equal_nan=True) or np.array_equal(self.grid[i:i+3, j:j+5] , blinker2, equal_nan=True)):
+                    self.blink_count+=1
+                    total+=1
+                #toad
+                if(np.array_equal(self.grid[i:i+6, j:j+6] , toad1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(toad1), equal_nan=True)):
+                    self.toad_count+=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+4, j:j+6] , toad2, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+4] , np.rot90(toad2), equal_nan=True)):
+                    self.toad_count+=1
+                    total+=1
+                # beacon
+                if(np.array_equal(self.grid[i:i+6, j:j+6] , beacon1, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(beacon1), equal_nan=True)):
+                    self.beacon_count+=1
+                    total+=1
+                if(np.array_equal(self.grid[i:i+6, j:j+6] , beacon2, equal_nan=True) or np.array_equal(self.grid[i:i+6, j:j+6] , np.rot90(beacon2), equal_nan=True)):
+                    self.beacon_count+=1
+                    total+=1
+                
+"""
+
+
 
 def randomGrid(N, M):
     """returns a grid of NxM random values"""
@@ -146,17 +213,13 @@ def update(frameNum, img, cw):
 
 # main() function
 def main():
-    osci = Oscilator()
-    glid = Glider()
-    lws = LWS()
-
     args_buff = None
     if(len(sys.argv) > 1):
         args_buff = sys.argv[1:]
-    
+
     cw = Conway('config.txt', args_buff)
     cw.config()
-    cw.report()
+    #cw.report()
 
     # set animation update interval
     updateInterval = 50
@@ -170,6 +233,7 @@ def main():
                                   save_count=50)
 
     plt.show()
+    file.close()
 
     """
     # Command line args are in sys.argv[1], sys.argv[2] ..

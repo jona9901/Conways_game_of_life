@@ -1,2 +1,0 @@
-Simulation at 2022-02-22
-Universe size 60 x 60
