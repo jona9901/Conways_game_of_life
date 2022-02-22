@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 conway.py 
 A simple Python/matplotlib implementation of Conway's Game of Life.
@@ -8,33 +9,46 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import matplotlib.animation as animation
 
+from datetime import datetime
+from tabulate import tabulate
+
+from patterns import *
+
 ON = 255
 OFF = 0
 vals = [ON, OFF]
+
+class Cell:
+    def __init__(self, i, j, pos):
+        self.i = i
+        self.j = j
+        self.pos = pos
+    def __str__(self):
+        print("i: %d, j: %d" % (self.i, self.j))
+    def ij(self):
+        return [self.i, self.j]
+    def kill_cell(self, grid, cells_alive):
+        grid[self.i, self.j] = OFF
+        cells_alive.remove(self)
+
+    @staticmethod
+    def graph(i, j, grid):
+        grid[i, j] = ON
+        
+    @staticmethod
+    def neighbour_sum(i, j, grid, N, M):
+        total = int((grid[i, (j-1)%M] + grid[i, (j+1)%M] +
+                     grid[(i-1)%N, j] + grid[(i+1)%N, j] +
+                     grid[(i-1)%N, (j-1)%M] + grid[(i-1)%N, (j+1)%M] +
+                     grid[(i+1)%N, (j-1)%M] + grid[(i+1)%N, (j+1)%M]))
+        return total // ON
 
 class Conway:
     def __init__(self, file_name, args):
         self.file_name = file_name
         self.args = args
         self.cells_allive = list()
-
-    class Cell:
-        def __init__(self, i, j):
-            self.i = i
-            self.j = j
-        def __str__(self):
-            print("i: %d, j: %d" % (self.i, self.j))
-        def graph(self, grid):
-            grid[self.i, self.j] = 1
-        def neighbour_sum(self, grid, N, M):
-            i = self.i
-            j = self.j
-
-            total = int((grid[i, (j-1)%M] + grid[i, (j+1)%M] +
-                         grid[(i-1)%N, j] + grid[(i+1)%N, j] +
-                         grid[(i-1)%N, (j-1)%M] + grid[(i-1)%N, (j+1)%M] +
-                         grid[(i+1)%N, (j-1)%M] + grid[(i+1)%N, (j+1)%M]))
-            return total
+        self.actual_gen = 0
 
     # read config file
     def config(self):
@@ -52,10 +66,10 @@ class Conway:
                 self.M = int(s[1])
 
             # Get generations
-            self.gens = f.readline()
+            self.gens = int(f.readline())
             for line in f:
                 s = line.split()
-                cell = self.Cell(int(s[0]),int(s[1]))
+                cell = Cell(int(s[0]),int(s[1]), len(self.cells_allive) - 1)
                 self.cells_allive.append(cell)
 
             # Generate empty grid of N * M
@@ -64,11 +78,27 @@ class Conway:
             
             # Graph cells allive
             for cell in self.cells_allive:
-                cell.graph(self.grid)
+                i, j = cell.ij()
+                Cell.graph(i, j, self.grid)
 
     def rules(self):
-        for cell in self.cells_allive:
-            print('neighbour sum: %d' % cell.neighbour_sum(self.grid, self.N, self.M))
+        if (self.actual_gen < self.gens):
+            self.actual_gen += 1
+            for cell in self.cells_allive:
+                i, j = cell.ij()
+                ns = cell.neighbour_sum(i, j, self.grid, self.N, self.M)
+                if (ns < 2):                # Rule 1    
+                    cell.kill_cell(self.grid, self.cells_allive)
+                elif (ns > 3):              # Rule 3
+                    cell.kill_cell(self.grid, self.cells_allive)
+            for i in range(0, self.N):
+                for j in range(0, self.M):
+                    if (self.grid[i, j] == OFF):
+                        ns = cell.neighbour_sum(i, j, self.grid, self.N, self.M)
+                        if(ns == 3):
+                            cell = Cell(i, j, len(self.cells_allive) - 1)
+                            self.cells_allive.append(cell)
+                            Cell.graph(i, j, self.grid)
 
 def randomGrid(N, M):
     """returns a grid of NxM random values"""
@@ -81,26 +111,31 @@ def addGlider(i, j, grid):
                         [0,  255, 255]])
     grid[i:i+3, j:j+3] = glider
 
-def update(frameNum, img, grid, N):
+def update(frameNum, img, cw):
     # copy grid since we require 8 neighbors for calculation
     # and we go line by line 
-    newGrid = grid.copy()
+
+    cw.rules()
+    newGrid = cw.grid.copy()
     # TODO: Implement the rules of Conway's Game of Life
 
     # update data
     img.set_data(newGrid)
-    grid[:] = newGrid[:]
+    cw.grid[:] = newGrid[:]
     return img,
 
 # main() function
 def main():
+    osci = Oscilator()
+    glid = Glider()
+    lws = LWS()
+
     args_buff = None
     if(len(sys.argv) > 1):
         args_buff = sys.argv[1:]
     
     cw = Conway('config.txt', args_buff)
     cw.config()
-    cw.rules()
 
     # set animation update interval
     updateInterval = 50
@@ -108,7 +143,7 @@ def main():
     # set up animation
     fig, ax = plt.subplots()
     img = ax.imshow(cw.grid, interpolation='nearest')
-    ani = animation.FuncAnimation(fig, update, fargs=(img, cw.grid, cw.N,),
+    ani = animation.FuncAnimation(fig, update, fargs=(img, cw),
                                   frames = 10,
                                   interval=updateInterval,
                                   save_count=50)
