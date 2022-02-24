@@ -18,8 +18,10 @@ ON = 255
 OFF = 0
 vals = [ON, OFF]
 
-file = None
+fp = None
 
+input_file = 'configs/config1.txt' 
+output_file = 'outputs/output1.txt'
 now = datetime.today().strftime('%Y-%m-%d')
 
 class Cell:        
@@ -43,7 +45,7 @@ class Conway:
         self.args = args
         self.cells_allive = list()
         self.actual_gen = 0
-        self.out = 'output.txt'
+        self.out = output_file 
 
         self.total_count = 0
         self.glider_count = 0
@@ -75,8 +77,8 @@ class Conway:
                 self.M = int(s[1])
 
             
-            file.write(f"Simulation at {now}\n")
-            file.write(f"Universe size {self.N} x {self.M}\n")
+            fp.write(f"Simulation at {now}\n")
+            fp.write(f"Universe size {self.N} x {self.M}\n")
 
             # Generate empty grid of N * M
             #self.grid = randomGrid(self.N, self.M)
@@ -89,15 +91,10 @@ class Conway:
                 i, j = int(s[0]), int(s[1])
                 self.grid[i, j] = ON
             
-            # Open file
-            #file.write(f'Simulation at {now}\n')
-            #file.write(f'Universe size {self.N} x {self.M}\n')
-
-
-
     def rules(self):
         if (self.actual_gen < self.gens):
             self.actual_gen += 1
+            print(f'Gen: {self.actual_gen}')
             new_grid = self.grid.copy()
             
             for i in range(0, self.N):
@@ -116,14 +113,14 @@ class Conway:
             self.grid[:] = new_grid[:]
             
     def write_to_file(self):
-        file.write(f'Iteration: {self.actual_gen}\n')
-        file.write('------------------------------------\n')
+        fp.write(f'Iteration: {self.actual_gen}\n')
+        fp.write('------------------------------------\n')
         if(self.total_count!=0):
-            file.write(tabulate([['Block', self.block_count, self.block_count*100/self.total_count], ['Beehive', self.beehive_count, self.beehive_count*100/self.total_count], ['Loaf', self.loaf_count, self.loaf_count*100/self.total_count], ['Boat', self.boat_count, self.boat_count*100/self.total_count], ['Tub', self.tub_count, self.tub_count*100/self.total_count], ['Blinker', self.blink_count, self.blink_count*100/self.total_count], ['Toad', self.toad_count, self.toad_count*100/self.total_count], ['Beacon', self.beacon_count, self.beacon_count*100/self.total_count], ['Glider', self.glider_count, self.glider_count*100/self.total_count], ['LG sp ship', self.spaceship_count, self.spaceship_count*100/self.total_count]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
+            fp.write(tabulate([['Block', self.block_count, self.block_count*100/self.total_count], ['Beehive', self.beehive_count, self.beehive_count*100/self.total_count], ['Loaf', self.loaf_count, self.loaf_count*100/self.total_count], ['Boat', self.boat_count, self.boat_count*100/self.total_count], ['Tub', self.tub_count, self.tub_count*100/self.total_count], ['Blinker', self.blink_count, self.blink_count*100/self.total_count], ['Toad', self.toad_count, self.toad_count*100/self.total_count], ['Beacon', self.beacon_count, self.beacon_count*100/self.total_count], ['Glider', self.glider_count, self.glider_count*100/self.total_count], ['LG sp ship', self.spaceship_count, self.spaceship_count*100/self.total_count]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
         else:
-            file.write(tabulate([['Block', self.block_count, 0], ['Beehive', self.beehive_count, 0], ['Loaf', self.loaf_count, 0], ['Boat', self.boat_count, 0], ['Tub', self.tub_count, 0], ['Blinker', self.blink_count, 0], ['Toad', self.toad_count, 0], ['Beacon', self.beacon_count, 0], ['Glider', self.glider_count, 0], ['LG sp ship', self.spaceship_count, 0]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
-        file.write('\n')
-        file.write('------------------------------------\n')
+            fp.write(tabulate([['Block', self.block_count, 0], ['Beehive', self.beehive_count, 0], ['Loaf', self.loaf_count, 0], ['Boat', self.boat_count, 0], ['Tub', self.tub_count, 0], ['Blinker', self.blink_count, 0], ['Toad', self.toad_count, 0], ['Beacon', self.beacon_count, 0], ['Glider', self.glider_count, 0], ['LG sp ship', self.spaceship_count, 0]], headers=[' ','Count', 'Percent'], tablefmt='orgtbl'))
+        fp.write('\n')
+        fp.write('------------------------------------\n')
 
     def report(self):
         for i in range(0, self.N):
@@ -246,13 +243,16 @@ def update(frameNum, img, cw):
 
 # main() function
 def main():
-    global file
+    global fp
+    global parser
+    
+
     args_buff = None
     if(len(sys.argv) > 1):
         args_buff = sys.argv[1:]
 
-    cw = Conway('config.txt', args_buff)
-    file = open(cw.out, "w")
+    cw = Conway(input_file, args_buff)
+    fp = open(cw.out, "w")
     cw.config()
 
     # set animation update interval
@@ -267,7 +267,7 @@ def main():
                                   save_count=50)
 
     plt.show()
-    file.close()
+    fp.close()
 
     """
     # Command line args are in sys.argv[1], sys.argv[2] ..
